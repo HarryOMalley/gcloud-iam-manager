@@ -4,47 +4,91 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
-)
+	"gcloud-iam-manager/internal/gcp"
+	"gcloud-iam-manager/internal/iam"
+	    tea "github.com/charmbracelet/bubbletea")
 
-// model defines the state of our application.
-type model struct{}
+// --- Model ---
 
-// Init is the first function that will be called. It returns a command.
-func (m model) Init() tea.Cmd {
-	// We don't need to do anything on startup, so we return nil.
-	return nil
+type model struct {
+	projectID string
+	user      string
+	err       error
 }
 
-// Update is called when a message is received. It's where we handle user input.
+func initialModel() model {
+	return model{}
+}
+
+// --- Messages ---
+
+type gcpInfoLoadedMsg struct {
+	Provider iam.Provider
+}
+
+type errMsg struct{ err error }
+
+func (e errMsg) Error() string { return e.err.Error() }
+
+// --- Commands ---
+
+func fetchGCPInfo() tea.Msg {
+	client, err := gcp.NewClient()
+	if err != nil {
+		return errMsg{err}
+	}
+	return gcpInfoLoadedMsg{Provider: client}
+}
+
+// --- TUI Methods ---
+
+func (m model) Init() tea.Cmd {
+	return fetchGCPInfo
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	// tea.KeyMsg is a message sent when the user presses a key.
 	case tea.KeyMsg:
-		// If the user presses 'q' or 'ctrl+c', we'll quit.
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
+
+	case gcpInfoLoadedMsg:
+		m.projectID = msg.Provider.GetProjectID()
+		m.user = msg.Provider.GetAuthenticatedUser()
+		return m, nil
+
+	case errMsg:
+		m.err = msg
+		return m, tea.Quit // Quit on error for now
 	}
 
-	// Return the updated model to the Bubble Tea runtime.
 	return m, nil
 }
 
-// View renders the UI. It's called after every Update.
 func (m model) View() string {
-	return "Hello, World! Welcome to gcloud-iam-manager.\nPress 'q' to quit."
+	if m.err != nil {
+		return fmt.Sprintf("Error: %v\n", m.err)
+	}
+
+	if m.projectID == "" || m.user == "" {
+		return "Loading GCP information..."
+	}
+
+	return fmt.Sprintf(
+		"GCP IAM Manager\n\nProject: %s\nUser:    %s\n\n(Press 'q' to quit)",
+		m.projectID,
+		m.user,
+	)
 }
 
-func main() {
-	// Create a new Bubble Tea program with our initial model.
-	p := tea.NewProgram(model{})
+// --- Main ---
 
-	// Run the program.
+func main() {
+	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting program: %v", err)
 		os.Exit(1)
 	}
 }
-
