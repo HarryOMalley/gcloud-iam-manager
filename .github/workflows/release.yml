@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+  pull_request: # Run the preview job on pull requests
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -20,13 +21,39 @@ jobs:
           fetch-depth: 0 # Required for git-cliff to analyze history
 
       - name: Install git-cliff
-        uses: git-cliff/install-action@v3
+        uses: kenji-miyake/setup-git-cliff@v1
 
       - name: Determine next version
         id: version
         run: echo "VERSION=$(./scripts/version.sh --next)" >> $GITHUB_OUTPUT
 
+      - name: Log determined version
+        run: echo "Next version determined = ${{ steps.version.outputs.VERSION }}"
+
+  preview-release:
+    if: github.event_name == 'pull_request' # Only run this job on pull requests
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install git-cliff
+        uses: kenji-miyake/setup-git-cliff@v1
+
+      - name: Generate changelog for preview
+        run: ./scripts/changelog.sh --output CHANGELOG.md --to ${{ needs.version.outputs.VERSION }}
+
+      - name: Display release preview
+        run: |
+          echo "--- Release Preview ---"
+          echo "Version to be created: ${{ needs.version.outputs.VERSION }}"
+          echo ""
+          echo "--- Changelog ---"
+          cat CHANGELOG.md
+
   release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only run on push to main
     needs: version
     runs-on: ubuntu-latest
     permissions:
@@ -36,7 +63,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install git-cliff
-        uses: git-cliff/install-action@v3
+        uses: kenji-miyake/setup-git-cliff@v1
 
       - name: Generate changelog
         run: ./scripts/changelog.sh --output CHANGELOG.md --to ${{ needs.version.outputs.VERSION }}
@@ -49,3 +76,4 @@ jobs:
           gh release create "$VERSION" \
             --title "$VERSION" \
             --notes-file CHANGELOG.md
+
