@@ -6,18 +6,23 @@ import (
 
 	"gcloud-iam-manager/internal/gcp"
 	"gcloud-iam-manager/internal/iam"
-	    tea "github.com/charmbracelet/bubbletea")
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 // --- Model ---
 
 type model struct {
 	projectID string
 	user      string
+	choices   []string // The menu choices
+	cursor    int      // Which choice is currently selected
 	err       error
 }
 
 func initialModel() model {
-	return model{}
+	return model{
+		choices: []string{"Create Service Account"},
+	}
 }
 
 // --- Messages ---
@@ -52,6 +57,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+
+		case "down", "j":
+			if m.cursor < len(m.choices)-1 {
+				m.cursor++
+			}
 		}
 
 	case gcpInfoLoadedMsg:
@@ -76,11 +91,23 @@ func (m model) View() string {
 		return "Loading GCP information..."
 	}
 
-	return fmt.Sprintf(
-		"GCP IAM Manager\n\nProject: %s\nUser:    %s\n\n(Press 'q' to quit)",
-		m.projectID,
-		m.user,
-	)
+	// Header
+	header := fmt.Sprintf("GCP IAM Manager\n\nProject: %s\nUser:    %s\n", m.projectID, m.user)
+
+	// Menu
+	menu := ""
+	for i, choice := range m.choices {
+		cursor := " " // not selected
+		if m.cursor == i {
+			cursor = ">" // selected
+		}
+		menu += fmt.Sprintf("%s %s\n", cursor, choice)
+	}
+
+	// Footer
+	footer := "\n(Press 'q' to quit)"
+
+	return header + "\n" + menu + footer
 }
 
 // --- Main ---

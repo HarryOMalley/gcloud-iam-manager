@@ -1,9 +1,10 @@
 package main
 
 import (
-		"testing"
-)
+	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
+)
 // mockProvider is a mock implementation of the iam.Provider for testing.
 type mockProvider struct {
 	projectID string
@@ -41,5 +42,28 @@ func TestGcpInfoLoaded(t *testing.T) {
 	}
 	if finalModel.user != "test-user@example.com" {
 		t.Errorf("Expected user to be 'test-user@example.com', got %q", finalModel.user)
+	}
+}
+
+func TestMenuNavigation(t *testing.T) {
+	m := initialModel()
+	m.choices = []string{"one", "two", "three"} // The 'choices' field doesn't exist yet
+
+	// Test moving down
+	msg := tea.KeyMsg{Type: tea.KeyDown}
+	updatedModel, _ := m.Update(msg)
+	finalModel := updatedModel.(model)
+
+	if finalModel.cursor != 1 { // The 'cursor' field doesn't exist yet
+		t.Errorf("Expected cursor to be 1 after moving down, got %d", finalModel.cursor)
+	}
+
+	// Test moving up
+	msg = tea.KeyMsg{Type: tea.KeyUp}
+	updatedModel, _ = finalModel.Update(msg)
+	finalModel = updatedModel.(model)
+
+	if finalModel.cursor != 0 {
+		t.Errorf("Expected cursor to be 0 after moving up, got %d", finalModel.cursor)
 	}
 }
