@@ -9,4 +9,7 @@ type Provider interface {
 
 	// GetAuthenticatedUser returns the email of the currently authenticated user.
 	GetAuthenticatedUser() string
+
+	// GetRoles returns a list of all predefined IAM roles available in GCP.
+	GetRoles() ([]*Role, error)
 }
