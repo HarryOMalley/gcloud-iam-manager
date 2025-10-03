@@ -76,7 +76,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		m.err = msg
-		return m, tea.Quit // Quit on error for now
+		return m, nil // Keep running to display the error
 	}
 
 	return m, nil
