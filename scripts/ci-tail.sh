@@ -4,7 +4,8 @@
 # Author: Harry O'Malley
 #
 # This script monitors the latest GitHub Actions workflow run for the current branch.
-# It streams the live logs and, upon failure, prints the logs for the failed jobs.
+# It waits for the run to start, streams the live logs, and upon failure,
+# prints the logs for the failed jobs.
 
 # --- Help Function ---
 show_help() {
@@ -24,20 +25,29 @@ if ! command -v gh &> /dev/null; then
 fi
 
 # --- Main Logic ---
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ -z "$CURRENT_BRANCH" ]; then
-    echo "Error: Could not determine the current git branch." >&2
+COMMIT_SHA=$(git rev-parse HEAD)
+if [ -z "$COMMIT_SHA" ]; then
+    echo "Error: Could not determine the current commit SHA." >&2
     exit 1
 fi
 
-echo "- Fetching the latest workflow run for branch '$CURRENT_BRANCH'..."
+RUN_ID=""
+echo "- Searching for workflow run for commit ${COMMIT_SHA:0:7}..."
 
-# Get the ID of the most recent run for the current branch.
-RUN_ID=$(gh run list --branch "$CURRENT_BRANCH" --limit 1 --json databaseId -q 'map(.databaseId) | .[0]')
+# Loop for a maximum of 2 minutes (12 attempts * 10s sleep) waiting for the run to be created.
+for i in {1..12}; do
+    RUN_ID=$(gh run list --commit "$COMMIT_SHA" --limit 1 --json databaseId -q 'map(.databaseId) | .[0]')
+    if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+        echo "- Found run #$RUN_ID."
+        break
+    fi
+    echo "- Workflow has not started yet, waiting 10 seconds... (Attempt $i/12)"
+    sleep 10
+done
 
 if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
-    echo "- No workflow runs found for this branch yet."
-    exit 0
+    echo "- Error: Timed out waiting for workflow run to start for commit ${COMMIT_SHA:0:7}." >&2
+    exit 1
 fi
 
 echo "- Tailing run #$RUN_ID. Press Ctrl+C to exit."

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gcloud-iam-manager/internal/iam"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,6 +18,13 @@ func (m *mockProvider) GetProjectID() string {
 
 func (m *mockProvider) GetAuthenticatedUser() string {
 	return m.user
+}
+
+func (m *mockProvider) GetRoles() ([]*iam.Role, error) {
+	// Return a dummy list of roles for testing the UI.
+	return []*iam.Role{
+		{Name: "roles/viewer", Title: "Viewer"},
+	}, nil
 }
 
 func TestGcpInfoLoaded(t *testing.T) {
