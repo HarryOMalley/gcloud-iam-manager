@@ -1,0 +1,49 @@
+# .github/cliff.toml
+# Configuration for git-cliff
+
+[changelog]
+# A custom header for the changelog
+header = """# Changelog
+
+All notable changes to this project will be documented in this file.
+"""
+# The template for the changelog body
+body = """
+{% if version %}
+    ## [{{ version }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}
+    ## [unreleased]
+{% endif %}
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group }}
+    {% for commit in commits %}
+        - {% if commit.scope %}(**{{ commit.scope }}**) {% endif %}{{ commit.message }} ({{ commit.id | truncate(length=7, end="") }})
+    {% endfor %}
+{% endfor %}
+"""
+# Remove leading/trailing whitespace from the body
+trim = true
+
+[git]
+# Use conventional commits
+conventional_commits = true
+# Filter out unconventional commits
+filter_unconventional = true
+# Process each line of a commit as an individual commit
+split_commits = false
+# Commit parsers for grouping commits
+commit_parsers = [
+    { message = "^feat", group = "✨ Features" },
+    { message = "^fix", group = "🐛 Bug Fixes" },
+    { message = "^docs", group = "📄 Documentation" },
+    { message = "^style", group = "🎨 Styling" },
+    { message = "^refactor", group = "🚜 Refactor" },
+    { message = "^test", group = "🧪 Testing" },
+    { message = "^build", group = "🏗️ Build System" },
+    { message = "^ci", group = "🚀 Continuous Integration" },
+    { message = "^chore", group = "⚙️ Miscellaneous Tasks" },
+    { message = "^chore\(release\):", skip = true },
+    { message = "^revert", group = "◀️ Reverts" },
+]
+# Sort commits by newest first
+sort_commits = "newest"

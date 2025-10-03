@@ -1,0 +1,9 @@
+# Gemini-specific file
+GEMINI.md
+AI_*.md
+
+# Compiled binaries
+/gcloud-iam-manager
+
+# Node dependencies
+/node_modules
