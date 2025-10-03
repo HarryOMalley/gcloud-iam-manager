@@ -33,17 +33,17 @@ filter_unconventional = true
 split_commits = false
 # Commit parsers for grouping commits
 commit_parsers = [
-    { message = "^feat", group = "✨ Features" },
-    { message = "^fix", group = "🐛 Bug Fixes" },
-    { message = "^docs", group = "📄 Documentation" },
-    { message = "^style", group = "🎨 Styling" },
-    { message = "^refactor", group = "🚜 Refactor" },
-    { message = "^test", group = "🧪 Testing" },
-    { message = "^build", group = "🏗️ Build System" },
-    { message = "^ci", group = "🚀 Continuous Integration" },
-    { message = "^chore", group = "⚙️ Miscellaneous Tasks" },
-    { message = "^chore\(release\):", skip = true },
-    { message = "^revert", group = "◀️ Reverts" },
+  { message = "^feat", group = "✨ Features" },
+  { message = "^fix", group = "🐛 Bug Fixes" },
+  { message = "^docs", group = "📄 Documentation" },
+  { message = "^style", group = "🎨 Styling" },
+  { message = "^refactor", group = "🚜 Refactor" },
+  { message = "^test", group = "🧪 Testing" },
+  { message = "^build", group = "🏗️ Build System" },
+  { message = "^ci", group = "🚀 Continuous Integration" },
+  { message = "^chore", group = "⚙️ Miscellaneous Tasks" },
+  { message = "^chore(release):", skip = true },
+  { message = "^revert", group = "◀️ Reverts" },
 ]
 # Sort commits by newest first
 sort_commits = "newest"

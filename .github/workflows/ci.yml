@@ -7,6 +7,26 @@ on:
   pull_request:
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for git-cliff to analyze history
+
+      - name: Install git-cliff
+        uses: kenji-miyake/setup-git-cliff@v1
+
+      - name: Determine next version
+        id: version
+        run: echo "VERSION=$(./scripts/version.sh --next)" >> $GITHUB_OUTPUT
+
+      - name: Log determined version
+        run: echo "Next version determined ${{ steps.version.outputs.VERSION }}"
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -15,7 +35,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: "1.21"
 
       - name: Build
         run: go build ./...
@@ -28,7 +48,29 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: "1.21"
 
       - name: Test
         run: go test ./...
+
+  release-preview:
+    if: github.event_name == 'pull_request' # Only run this job on pull requests
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install git-cliff
+        uses: kenji-miyake/setup-git-cliff@v1
+
+      - name: Generate changelog for preview
+        run: ./scripts/changelog.sh --output CHANGELOG.md --to ${{ needs.version.outputs.VERSION }}
+
+      - name: Display release preview
+        run: |
+          echo "--- Release Preview ---"
+          echo "Version to be created: ${{ needs.version.outputs.VERSION }}"
+          echo ""
+          echo "--- Changelog ---"
+          cat CHANGELOG.md
